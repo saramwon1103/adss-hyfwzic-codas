@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+.streamlit/secrets.toml
+# Regenerated results stay local; existing tracked results remain tracked by Git.
+outputs/*
+!outputs/paper/
+!outputs/irrigation/
+outputs/paper/*
+outputs/irrigation/*
+!outputs/paper/.gitkeep
+!outputs/irrigation/.gitkeep

@@ -1,0 +1,4 @@
+expert,water_use_liters,soil_moisture_mae_points,over_irrigation_liters,replanning_response_days,missing_data_robustness
+MOCK_E1,5,5,4,3,4
+MOCK_E2,4,5,4,4,5
+MOCK_E3,5,4,5,4,4
