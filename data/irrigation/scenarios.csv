@@ -1,0 +1,4 @@
+scenario,start_step,duration_days,temp_add_c,rh_subtract_points,radiation_factor,rain_factor,water_budget_factor
+Normal,0,0,0,0,1,1,1
+Drought,10,0,4,15,1.15,0.1,0.6
+Missing Sensor,10,9,0,0,1,1,1

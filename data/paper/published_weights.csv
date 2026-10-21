@@ -1,0 +1,9 @@
+criterion,name,direction,weight
+C1,Accessibility,benefit,0.118076164
+C2,Scalability,benefit,0.116629064
+C3,Interoperability,benefit,0.118007679
+C4,Uncertainty and dynamic factors,benefit,0.129045644
+C5,Re-planning,benefit,0.142287487
+C6,Expert knowledge,benefit,0.113170203
+C7,Prediction and forecast,benefit,0.140090693
+C8,Analysis of historical information,benefit,0.122693066

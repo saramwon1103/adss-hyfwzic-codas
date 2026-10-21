@@ -1,0 +1,19 @@
+{
+  "source": "Alamoodi et al. (2024), Computers and Electronics in Agriculture 227, 109618",
+  "doi": "10.1016/j.compag.2024.109618",
+  "files": {
+    "adss_performance.csv": "Table 6, p.10; numeric ratings 1/2/3",
+    "published_weights.csv": "Table 5, p.9; 9 decimal digits; sum 1.000000000",
+    "expert_judgments.csv": "Table 4, p.9; 5 expert rows (transposed)",
+    "linguistic_mapping.csv": "Table 2, p.8",
+    "performance_mapping.csv": "Table 6 footnote, p.10",
+    "expected_ranking.csv": "Table 8 p.12; H as printed, rank computed using competition ties",
+    "expected_distances.csv": "Table 7 p.11; E/T as printed",
+    "sensitivity_scenarios.csv": "Table 9 p.12; Cj=0.3, remaining=0.1",
+    "expected_sensitivity.csv": "Table 10 p.13; 104 published H/rank cells",
+    "expected_weights.csv": "Table 5 p.9; copy of published final weights"
+  },
+  "tau": 0.02,
+  "threshold_rule": "paper Eq.16: psi=1 when abs(Ei-Ek)<=tau",
+  "note": "tau=0.02 is an explicit reproduction assumption inferred to match Table 8; paper suggests near zero without specifying a numeric value. Published H often truncated rather than rounded; tolerance 0.0011. Do not replace reference values with calculated values."
+}

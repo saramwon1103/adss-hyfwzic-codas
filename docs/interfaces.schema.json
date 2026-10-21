@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adss-hyfwzic-codas:real-interfaces:2.0",
+  "title": "Real-data DSS interface contracts for src-layout repository",
+  "$defs": {
+    "RealStrategyOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "irrigation_liters",
+        "used_fallback",
+        "reason"
+      ],
+      "properties": {
+        "irrigation_liters": {
+          "type": "number",
+          "minimum": 0
+        },
+        "used_fallback": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "RealStrategyInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "moisture_observation_index",
+        "weather_forecast",
+        "water_budget_liters",
+        "config",
+        "model"
+      ],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "moisture_observation_index": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "weather_forecast": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "temperature_c",
+            "rain_mm",
+            "radiation_mj_m2",
+            "humidity_percent"
+          ],
+          "properties": {
+            "temperature_c": {
+              "type": "number"
+            },
+            "rain_mm": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radiation_mj_m2": {
+              "type": "number",
+              "minimum": 0
+            },
+            "humidity_percent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "water_budget_liters": {
+          "type": "number",
+          "minimum": 0
+        },
+        "config": {
+          "type": "object"
+        },
+        "model": {
+          "type": "object",
+          "description": "Fitted training-only SoilResponseModel, serialized by to_dict(); no evaluation targets."
+        }
+      }
+    },
+    "RealPerformanceMatrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "alternative",
+          "water_use_liters",
+          "soil_moisture_mae_points",
+          "over_irrigation_liters",
+          "replanning_response_days",
+          "missing_data_robustness"
+        ],
+        "properties": {
+          "alternative": {
+            "type": "string",
+            "minLength": 1
+          },
+          "water_use_liters": {
+            "type": "number",
+            "minimum": 0
+          },
+          "soil_moisture_mae_points": {
+            "type": "number",
+            "minimum": 0
+          },
+          "over_irrigation_liters": {
+            "type": "number",
+            "minimum": 0
+          },
+          "replanning_response_days": {
+            "type": "number",
+            "minimum": 0
+          },
+          "missing_data_robustness": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    }
+  },
+  "description": "Only real-unit contracts are implemented here: litres and relative probe-index points. Python enforces action<=budget and unique alternative IDs."
+}

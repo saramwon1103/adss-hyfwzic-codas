@@ -1,0 +1,45 @@
+{
+  "archive_name": "Soil Moisture, Irrigation Actuator and Weather Dat.zip",
+  "archive_sha256": "a6043b8e44db7adfdfc5a7f5ff8157a0ed38d29a861a1555dcd73d0cec9853e8",
+  "dataset_title": "Soil Moisture, Irrigation Actuator and Weather Dataset from a Multi-Sector Precision-Irrigation Field Trial (Arnesano, Apulia, Italy, 2025)",
+  "license_as_declared": "CC BY 4.0",
+  "citation_status": "Source README has placeholder contributor and DOI fields; no DOI/authors invented.",
+  "files": [
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/README.md",
+      "local_name": "SOURCE_README.md",
+      "sha256": "184e986b5693090b52a76a5baf3d2767a4c5d556304e280854961a8245ff36b4",
+      "size_bytes": 16373
+    },
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/DATA_DICTIONARY.md",
+      "local_name": "SOURCE_DATA_DICTIONARY.md",
+      "sha256": "23aaa907ac86d5132a5cfa195b9cfc5b6ffe92af32e4d5d6d70ae631babc2ab1",
+      "size_bytes": 16629
+    },
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/03_code/config.py",
+      "local_name": "source_config.py",
+      "sha256": "1a87de4c23fa8169b24b09c20e77988343e5be6349ced326ac1234d02cbf67e9",
+      "size_bytes": 8343
+    },
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/02_processed_data/merged/dataset_zone_1.csv",
+      "local_name": "sector_1_10min.csv",
+      "sha256": "994ae706bf45d83bccfbc77c97977bccf44f7bef939d468d9c1458c680ed2bd3",
+      "size_bytes": 4858660
+    },
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/02_processed_data/merged/dataset_zone_2.csv",
+      "local_name": "sector_2_10min.csv",
+      "sha256": "28cb63167aa3648a8b360fe33c8bcf2d54e42b33454557b4cb47ead541d0c4e5",
+      "size_bytes": 4839550
+    },
+    {
+      "archive_member": "Soil Moisture, Irrigation Actuator and Weather Dat/02_processed_data/irrigation_events/final_irrigation_events.csv",
+      "local_name": "irrigation_events.csv",
+      "sha256": "d178704cb38ea086e41dc1091c4bb87846bb316efa66ace70d35f5619a2a4381",
+      "size_bytes": 71204
+    }
+  ]
+}

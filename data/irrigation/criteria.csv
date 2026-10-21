@@ -1,0 +1,6 @@
+criterion,name,direction,unit
+water_use_liters,Water Use,cost,L
+soil_moisture_mae_points,Soil Moisture Error,cost,probe index points
+over_irrigation_liters,Over-irrigation Proxy,cost,L (model proxy)
+replanning_response_days,Re-planning Response,cost,day
+missing_data_robustness,Missing-data Robustness,benefit,0..1

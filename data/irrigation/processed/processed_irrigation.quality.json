@@ -1,0 +1,31 @@
+{
+  "sector": 1,
+  "crop": "open-field tomato",
+  "source_file": "sector_1_10min.csv",
+  "source_sha256": "994ae706bf45d83bccfbc77c97977bccf44f7bef939d468d9c1458c680ed2bd3",
+  "source_rows": 33259,
+  "source_start": "2025-02-09 00:00:00",
+  "source_end": "2025-09-27 23:00:00",
+  "daily_rows": 230,
+  "sensor_raw_missing_rows": 22516,
+  "sensor_out_of_range_rows": 2584,
+  "valid_sensor_rows": 8159,
+  "daily_missing_boundary_count": 40,
+  "nominal_flow_liters_per_minute": 1.1,
+  "flow_consistency_max_error_liters": 0.0,
+  "soil_unit": "relative probe index, 0..100; NOT calibrated volumetric water content",
+  "water_unit": "litres reconstructed from nominal flow \u00d7 valve duration, NOT flow-meter readings",
+  "rain_method": "sum(interpolated hourly rain values \u00d7 10/60); approximate rate integration, not raw sum",
+  "radiation_method": "sum(direct radiation W/m2 \u00d7 600 s) / 1e6; direct-radiation proxy, not total solar",
+  "timezone": "source naive Europe/Rome wall-clock dates preserved; no fabricated UTC precision",
+  "soil_boundary_method": "latest valid 0..100 observation at/before local midnight, maximum age 12h; no backward fill",
+  "excluded_features": [
+    "real_moisture_delta",
+    "target_mean_24h",
+    "target_point_24h",
+    "water_vol_to_24h"
+  ],
+  "weather_origin": "Open-Meteo historical ERA5 reanalysis already in uploaded merged CSVs",
+  "forecasts": "one-day persistence, not archived operational forecasts",
+  "quality_note": "Range check only; in-range sensor spikes/flatlines may remain. No centred smoothing with future observations."
+}

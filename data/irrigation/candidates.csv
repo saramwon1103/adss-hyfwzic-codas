@@ -1,0 +1,4 @@
+alternative,module,status
+SIDSS-like (stub),src.irrigation.strategies.sidss_like,reference stub without ANFIS/PLSR
+FDSS-like,src.irrigation.strategies.fdss_like,teaching fuzzy-rule heuristic
+MRGCD-like,src.irrigation.strategies.mrgcd_like,teaching demand/scheduling heuristic
