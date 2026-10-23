@@ -1,6 +1,6 @@
-term,numerical_score,mu,nu
-LI,1,0.15,0.95
-SI,2,0.35,0.75
-MI,3,0.55,0.55
-I,4,0.75,0.35
-VI,5,0.95,0.15
+code,label,numerical_value,mu,nu
+VI,Very Important,5,0.95,0.15
+I,Important,4,0.75,0.35
+MI,Moderately Important,3,0.55,0.55
+SI,Slightly Important,2,0.35,0.75
+LI,Little Importance,1,0.15,0.95

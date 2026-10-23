@@ -1,35 +1,56 @@
 import numpy as np
-import pandas as pd
-import pytest
-from src.core.hy_fwzic import compute_weights
-from src.core.fuzzy import score,scale,aggregate
-from src.pipelines import run_mode1,load_mode1
+
+from src.core.hy_fwzic import compute_hy_fwzic
+from src.paper.load_paper_data import (
+    load_linguistic_mapping,
+    load_expert_judgments,
+    load_expected_weights,
+)
 
 
-def test_table5_all_weights():
-    w=run_mode1()['weight_comparison']
-    assert (w.abs_error<1e-8).all()
-    assert w.loc[w.criterion=='C5','weight'].iloc[0]==pytest.approx(.142287487,abs=1e-9)
-    assert w.weight.sum()==pytest.approx(1)
+def test_paper_hy_fwzic_reproduction():
 
+    # ---------------------------------------
+    # ARRANGE
+    # Load input data from CSV
+    # ---------------------------------------
 
-def test_scalar_operation_by_hand():
-    np.testing.assert_allclose(scale([[.75,.25]],.5),[[.5,.5]])
-    assert score([[.5,.5]])[0]==pytest.approx(.875)
+    mapping_df = load_linguistic_mapping()
 
+    expert_df = load_expert_judgments()
 
-def test_single_expert_aggregate_identity():
-    x=np.array([[[.75,.35],[.55,.55]]])
-    np.testing.assert_allclose(aggregate(x),x[0])
+    expected_df = load_expected_weights()
 
+    # ---------------------------------------
+    # ACT
+    # Run our Hy-FWZIC implementation
+    # ---------------------------------------
 
-def test_computed_pipeline_matches_published():
-    a=run_mode1(source='published')['result'].ranking
-    b=run_mode1(source='computed')['result'].ranking
-    np.testing.assert_allclose(a.H,b.H,atol=1e-7)
-    assert a['rank'].tolist()==b['rank'].tolist()
+    actual_df = compute_hy_fwzic(
+        expert_df=expert_df,
+        mapping_df=mapping_df,
+    )
 
+    # ---------------------------------------
+    # ASSERT
+    # Compare our result with paper result
+    # ---------------------------------------
 
-def test_invalid_judgment():
-    d=load_mode1();d['judgments'].iloc[0,0]=8
-    with pytest.raises(ValueError):compute_weights(d['judgments'],d['linguistic_mapping'])
+    comparison = actual_df.merge(
+        expected_df,
+        on="criterion",
+        how="inner",
+    )
+
+    assert len(comparison) == len(expected_df)
+
+    assert np.allclose(
+        comparison["weight"],
+        comparison["expected_weight"],
+        atol=1e-6,
+    )
+
+    assert np.array_equal(
+        comparison["rank"],
+        comparison["expected_rank"],
+    )

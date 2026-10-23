@@ -1,12 +1,38 @@
+from pathlib import Path
+
 import pandas as pd
-from src.config import PAPER_DATA
 
 
-def load_mode1():
-    d=PAPER_DATA
-    return {'matrix':pd.read_csv(d/'adss_performance.csv',index_col='alternative'),
-            'criteria':pd.read_csv(d/'published_weights.csv').set_index('criterion'),
-            'mapping':pd.read_csv(d/'performance_mapping.csv'),
-            'linguistic_mapping':pd.read_csv(d/'linguistic_mapping.csv'),
-            'judgments':pd.read_csv(d/'expert_judgments.csv',index_col='expert'),
-            'scenarios':pd.read_csv(d/'sensitivity_scenarios.csv',index_col='scenario')}
+# Root của project:
+# D:/adss-hyfwzic-codas
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+PAPER_DATA_DIR = PROJECT_ROOT / "data" / "paper"
+EXPECTED_DIR = PAPER_DATA_DIR / "expected"
+
+
+def load_linguistic_mapping() -> pd.DataFrame:
+    """
+    Load Table 2 linguistic -> HyFS mapping.
+    """
+    path = PAPER_DATA_DIR / "linguistic_mapping.csv"
+
+    return pd.read_csv(path)
+
+
+def load_expert_judgments() -> pd.DataFrame:
+    """
+    Load Table 4 expert decision matrix.
+    """
+    path = PAPER_DATA_DIR / "expert_judgments.csv"
+
+    return pd.read_csv(path)
+
+
+def load_expected_weights() -> pd.DataFrame:
+    """
+    Load Table 5 expected Hy-FWZIC results reported by the paper.
+    """
+    path = EXPECTED_DIR / "expected_weights.csv"
+
+    return pd.read_csv(path)

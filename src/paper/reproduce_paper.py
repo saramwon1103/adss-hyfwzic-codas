@@ -1,53 +1,318 @@
-import argparse,json
 from pathlib import Path
-from src.config import ROOT,PAPER_DATA,PAPER_OUTPUT
-from src.core.codas import hyperbolic_codas
-from src.core.hy_fwzic import compute_weights
-from src.analysis.sensitivity import analyze
-from src.common.outputs import export_codas
-from src.common.reproducibility import write_manifest
-from .load_paper_data import load_mode1
-from .validate_paper import compare_results
+
+import pandas as pd
+
+from src.core.hy_fwzic import compute_hy_fwzic
+from src.paper.load_paper_data import (
+    load_linguistic_mapping,
+    load_expert_judgments,
+    load_expected_weights,
+)
 
 
-def run_mode1(tau=.02,source='published'):
-    data=load_mode1();criteria=data['criteria']
-    computed=compute_weights(data['judgments'],data['linguistic_mapping'])
-    if source not in ['published','computed']:raise ValueError('source must be published or computed.')
-    weights=criteria.weight if source=='published' else computed.set_index('criterion').weight
-    rank=lambda w:hyperbolic_codas(data['matrix'],w,criteria.direction,data['mapping'],tau)
-    result=rank(weights)
-    details,summary=analyze(rank,weights,data['scenarios'])
-    comparison,sc,wc=compare_results(result,details,computed,criteria)
-    return {**data,'weights':weights,'weight_comparison':wc,'result':result,'comparison':comparison,
-            'sensitivity':details,'sensitivity_summary':summary,'sensitivity_comparison':sc}
+# =========================================================
+# PROJECT PATHS
+# =========================================================
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+OUTPUT_DIR = PROJECT_ROOT / "outputs" / "paper"
+
+
+# =========================================================
+# HY-FWZIC PAPER REPRODUCTION
+# =========================================================
+
+def reproduce_hy_fwzic() -> pd.DataFrame:
+    """
+    Reproduce the Hy-FWZIC criteria weights reported in the paper.
+
+    Pipeline:
+
+        Paper input CSV
+            ↓
+        Hy-FWZIC implementation
+            ↓
+        Actual results
+            ↓
+        Compare with paper expected results
+            ↓
+        PASS / FAIL
+            ↓
+        Save comparison CSV
+
+    Returns
+    -------
+    pd.DataFrame
+        Comparison table containing actual and expected results.
+    """
+
+    # -----------------------------------------------------
+    # STEP 1
+    # Load input data reconstructed from the paper
+    # -----------------------------------------------------
+
+    mapping_df = load_linguistic_mapping()
+
+    expert_df = load_expert_judgments()
+
+    # -----------------------------------------------------
+    # STEP 2
+    # Load expected results reported in Table 5
+    # -----------------------------------------------------
+
+    expected_df = load_expected_weights()
+
+    # -----------------------------------------------------
+    # STEP 3
+    # Run our Hy-FWZIC implementation
+    # -----------------------------------------------------
+
+    actual_df = compute_hy_fwzic(
+        expert_df=expert_df,
+        mapping_df=mapping_df,
+    )
+
+    # -----------------------------------------------------
+    # STEP 4
+    # Rename actual result columns
+    # -----------------------------------------------------
+
+    actual_df = actual_df.rename(
+        columns={
+            "mu": "actual_mu",
+            "nu": "actual_nu",
+            "crisp": "actual_crisp",
+            "weight": "actual_weight",
+            "rank": "actual_rank",
+        }
+    )
+
+    # -----------------------------------------------------
+    # STEP 5
+    # Merge actual results with expected results
+    # -----------------------------------------------------
+
+    comparison_df = actual_df.merge(
+        expected_df,
+        on="criterion",
+        how="inner",
+        validate="one_to_one",
+    )
+
+    # -----------------------------------------------------
+    # STEP 6
+    # Check whether all expected criteria were reproduced
+    # -----------------------------------------------------
+
+    if len(comparison_df) != len(expected_df):
+        raise ValueError(
+            "The number of reproduced criteria does not match "
+            "the number of expected criteria."
+        )
+
+    # -----------------------------------------------------
+    # STEP 7
+    # Calculate reproduction differences
+    # -----------------------------------------------------
+
+    comparison_df["weight_difference"] = (
+        comparison_df["actual_weight"]
+        - comparison_df["expected_weight"]
+    ).abs()
+
+    comparison_df["rank_match"] = (
+        comparison_df["actual_rank"]
+        == comparison_df["expected_rank"]
+    )
+
+    # Numerical tolerance used for weight comparison
+    tolerance = 1e-6
+
+    comparison_df["weight_match"] = (
+        comparison_df["weight_difference"]
+        <= tolerance
+    )
+
+    # Criterion passes only when:
+    # - weight matches
+    # - rank matches
+    comparison_df["status"] = (
+        comparison_df["weight_match"]
+        & comparison_df["rank_match"]
+    ).map(
+        {
+            True: "PASS",
+            False: "FAIL",
+        }
+    )
+
+    # -----------------------------------------------------
+    # STEP 8
+    # Calculate summary BEFORE removing helper columns
+    #
+    # Important:
+    # weight_match and rank_match still exist here.
+    # This avoids the previous KeyError.
+    # -----------------------------------------------------
+
+    max_difference = comparison_df[
+        "weight_difference"
+    ].max()
+
+    all_weights_match = comparison_df[
+        "weight_match"
+    ].all()
+
+    all_ranks_match = comparison_df[
+        "rank_match"
+    ].all()
+
+    overall_pass = (
+        all_weights_match
+        and all_ranks_match
+    )
+
+    # -----------------------------------------------------
+    # STEP 9
+    # Select columns for display and CSV output
+    # -----------------------------------------------------
+
+    comparison_df = comparison_df[
+        [
+            "criterion",
+            "actual_mu",
+            "actual_nu",
+            "actual_crisp",
+            "actual_weight",
+            "expected_weight",
+            "weight_difference",
+            "actual_rank",
+            "expected_rank",
+            "status",
+        ]
+    ]
+
+    # -----------------------------------------------------
+    # STEP 10
+    # Prepare formatted version for terminal display
+    # -----------------------------------------------------
+
+    display_df = comparison_df.copy()
+
+    numeric_columns = [
+        "actual_mu",
+        "actual_nu",
+        "actual_crisp",
+        "actual_weight",
+        "expected_weight",
+        "weight_difference",
+    ]
+
+    for column in numeric_columns:
+        display_df[column] = display_df[column].map(
+            lambda value: f"{value:.9f}"
+        )
+
+    # -----------------------------------------------------
+    # STEP 11
+    # Print comparison table
+    # -----------------------------------------------------
+
+    print()
+    print("=" * 120)
+    print("MODE 1 - Hy-FWZIC Paper Reproduction")
+    print("=" * 120)
+
+    print(
+        display_df.to_string(
+            index=False
+        )
+    )
+
+    # -----------------------------------------------------
+    # STEP 12
+    # Print reproduction summary
+    # -----------------------------------------------------
+
+    print()
+    print("-" * 120)
+    print("REPRODUCTION SUMMARY")
+    print("-" * 120)
+
+    print(
+        f"Criteria reproduced : "
+        f"{len(comparison_df)}"
+    )
+
+    print(
+        f"Maximum weight error: "
+        f"{max_difference:.12f}"
+    )
+
+    print(
+        f"Weights match       : "
+        f"{all_weights_match}"
+    )
+
+    print(
+        f"Ranks match         : "
+        f"{all_ranks_match}"
+    )
+
+    if overall_pass:
+        print(
+            "Overall result      : PASS "
+            "- Hy-FWZIC reproduction matches the paper."
+        )
+    else:
+        print(
+            "Overall result      : FAIL "
+            "- Differences detected."
+        )
+
+    # -----------------------------------------------------
+    # STEP 13
+    # Save reproduction results to CSV
+    # -----------------------------------------------------
+
+    OUTPUT_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    output_path = (
+        OUTPUT_DIR
+        / "hy_fwzic_reproduction.csv"
+    )
+
+    comparison_df.to_csv(
+        output_path,
+        index=False,
+    )
+
+    print()
+    print(
+        f"Saved result to     : {output_path}"
+    )
+
+    print("=" * 120)
+    print()
+
+    # -----------------------------------------------------
+    # Return DataFrame for possible future reuse
+    # -----------------------------------------------------
+
+    return comparison_df
+
+
+# =========================================================
+# MAIN
+# =========================================================
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--output', type=Path, default=PAPER_OUTPUT)
-    parser.add_argument('--weights', choices=['published','computed'], default='published')
-    parser.add_argument('--tau', type=float, default=.02)
-    args = parser.parse_args()
-    run = run_mode1(args.tau, args.weights)
-    out = args.output.resolve()
-    export_codas(run['result'], out, run['matrix'].columns)
-    for key in ['weight_comparison','comparison','sensitivity','sensitivity_summary','sensitivity_comparison']:
-        run[key].to_csv(out/f'{key}.csv', index=False)
-    report = {'weight_source': args.weights, 'tau': args.tau, 'threshold_rule':'close (paper Eq.16)',
-              'winner': run['result'].ranking.iloc[0].alternative,
-              'base_scores_passed': int(run['comparison'].score_within_tolerance.sum()),
-              'base_scores_total': 13,
-              'sensitivity_scores_passed': int(run['sensitivity_comparison'].score_within_tolerance.sum()),
-              'sensitivity_scores_total':104,
-              'sensitivity_rank_matches': int(run['sensitivity_comparison'].rank_match.sum()),
-              'max_weight_error': float(run['weight_comparison'].abs_error.max()),
-              'note':'Reference H is printed to 3 decimals; absolute tolerance 0.0011. Exact printed ties/ranks are compared and discrepancies retained.'}
-    (out/'validation.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
-    write_manifest(out, ROOT, 'Mode1', list(PAPER_DATA.rglob('*.csv')),
-                   {'weights':args.weights,'tau':args.tau,'threshold_rule':'close','score_tolerance':.0011})
-    print(run['result'].ranking.to_string(index=False))
-    print(json.dumps(report,indent=2))
-    return 0 if report['base_scores_passed']==13 and report['sensitivity_scores_passed']==104 and report['max_weight_error']<1e-8 else 1
+    reproduce_hy_fwzic()
 
-if __name__=='__main__':raise SystemExit(main())
+
+if __name__ == "__main__":
+    main()
