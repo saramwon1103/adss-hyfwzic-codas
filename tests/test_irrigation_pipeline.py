@@ -183,3 +183,210 @@ def test_scenario_csv_controls_transformation(tmp_path,monkeypatch):
     monkeypatch.setattr(engine,'SCENARIO_FILE',file)
     scenario=engine.real_scenario(base,'Drought')
     assert scenario.loc[10,'temperature_c']==pytest.approx(base.loc[10,'temperature_c']+2.)
+
+def test_simulator_uses_measurement_layer_when_sensor_available(real):
+    """
+    Khi sensor hoạt động, policy nhận measurement của environment,
+    không phải truy cập trực tiếp latent theta.
+    """
+    base, model, cfg, _, _, _ = real
+
+    frame = real_scenario(base, 'Normal').copy()
+    frame = frame.iloc[:1].copy()
+
+    cfg = dict(cfg)
+    cfg["sensor_bias_points"] = 1.0
+
+    seen = []
+
+    class Spy:
+        name = 'Spy'
+
+        def decide(self, item):
+            seen.append(item.moisture_observation_index)
+            return RealStrategyOutput(
+                irrigation_liters=0.0,
+                used_fallback=False,
+                reason='spy'
+            )
+
+    simulate_real(frame, model, cfg, Spy)
+
+    assert seen == [51.0]
+
+def test_simulator_hides_observation_during_sensor_outage(real):
+    """
+    Khi sensor_missing=True, policy phải nhận None,
+    nhưng simulator vẫn tiếp tục cập nhật trạng thái môi trường.
+    """
+    base, model, cfg, _, _, _ = real
+
+    frame = real_scenario(base, 'Normal').copy()
+    frame = frame.iloc[:1].copy()
+
+    frame.loc[frame.index[0], 'sensor_missing'] = True
+    frame.loc[frame.index[0], 'soil_moisture_index'] = 37.0
+
+    seen = []
+
+    class Spy:
+        name = 'Spy'
+
+        def decide(self, item):
+            seen.append(item.moisture_observation_index)
+            return RealStrategyOutput(
+                irrigation_liters=0.0,
+                used_fallback=True,
+                reason='spy'
+            )
+
+    trace = simulate_real(frame, model, cfg, Spy)
+
+    assert seen == [None]
+
+    assert (
+        trace.iloc[0].moisture_end_index
+        != trace.iloc[0].moisture_start_index
+    )
+
+
+def test_environment_disturbance_changes_latent_state(real):
+    """
+    Disturbance thuộc environment, không phải policy.
+    Nó phải làm thay đổi moisture_end_index.
+    """
+    base, model, cfg, _, _, _ = real
+
+    frame = real_scenario(base, 'Normal').iloc[:1].copy()
+
+    class ZeroWater:
+        name = 'ZeroWater'
+
+        def decide(self, item):
+            return RealStrategyOutput(
+                irrigation_liters=0.0,
+                used_fallback=False,
+                reason='zero water'
+            )
+
+    disturbance = [5.0]
+
+    trace = simulate_real(
+        frame,
+        model,
+        cfg,
+        ZeroWater,
+        disturbances=disturbance,
+    )
+
+    row = frame.iloc[0]
+
+    actual_weather = {
+        c: float(row[c])
+        for c in WEATHER
+    }
+
+    expected_without_disturbance = model.predict(
+        cfg['initial_index'],
+        0.0,
+        actual_weather,
+    )
+
+    expected = np.clip(
+        expected_without_disturbance + 5.0,
+        0.0,
+        100.0,
+    )
+
+    assert trace.iloc[0].moisture_end_index == pytest.approx(
+        expected
+    )
+
+def test_sensor_outage_hides_disturbed_environment_state(real):
+    """
+    Environment vẫn chịu disturbance.
+    Nhưng khi sensor outage, policy không được nhìn thấy
+    disturbed latent state ở bước kế tiếp.
+    """
+    base, model, cfg, _, _, _ = real
+
+    frame = real_scenario(base, 'Normal').iloc[:2].copy()
+
+    frame.loc[frame.index[0], 'sensor_missing'] = False
+    frame.loc[frame.index[1], 'sensor_missing'] = True
+
+    seen = []
+
+    class Spy:
+        name = 'Spy'
+
+        def decide(self, item):
+            seen.append(
+                item.moisture_observation_index
+            )
+
+            return RealStrategyOutput(
+                irrigation_liters=0.0,
+                used_fallback=(
+                    item.moisture_observation_index
+                    is None
+                ),
+                reason='spy'
+            )
+
+    simulate_real(
+        frame,
+        model,
+        cfg,
+        Spy,
+        disturbances=[5.0, 0.0],
+    )
+
+    assert seen[0] is not None
+    assert seen[1] is None
+
+def test_training_residuals_are_pre_evaluation_only(real):
+    """
+    Residual library chỉ được tạo từ training transitions
+    trước evaluation_start.
+    """
+    from src.irrigation.soil_response import training_residuals
+
+    _, model, _, _, _, daily = real
+
+    residuals = training_residuals(
+        daily,
+        model,
+        '2025-06-01',
+    )
+
+    assert len(residuals) == model.training_report['training_rows']
+
+    assert residuals['timestamp'].max() < pd.Timestamp(
+        '2025-06-01'
+    )
+
+    assert np.isfinite(
+        residuals['residual'].to_numpy()
+    ).all()
+
+def test_training_residual_definition_matches_observed_minus_predicted(real):
+    """
+    residual = observed next moisture - model predicted next moisture
+    """
+    from src.irrigation.soil_response import training_residuals
+
+    _, model, _, _, _, daily = real
+
+    residuals = training_residuals(
+        daily,
+        model,
+        '2025-06-01',
+    )
+
+    row = residuals.iloc[0]
+
+    assert row.residual == pytest.approx(
+        row.observed_next_index
+        - row.predicted_next_index
+    )

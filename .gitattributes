@@ -1,0 +1,4 @@
+data/irrigation/raw/*.csv text eol=lf
+data/irrigation/raw/*.md text eol=lf
+data/irrigation/raw/*.py text eol=lf
+data/irrigation/raw/*.json text eol=lf

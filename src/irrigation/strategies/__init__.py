@@ -1,4 +1,12 @@
-from .sidss_like import SIDSSRealStub
+from .sidss_like import SIDSSReal
 from .fdss_like import FDSSReal
 from .mrgcd_like import MRGCDReal
-REAL_STRATEGIES={s.name:s for s in [SIDSSRealStub,FDSSReal,MRGCDReal]}
+
+REAL_STRATEGIES = {
+    s.name: s
+    for s in [
+        SIDSSReal,
+        FDSSReal,
+        MRGCDReal,
+    ]
+}
