@@ -1,8 +1,7 @@
-"""Local Streamlit UI; no hosted service or external credentials required."""
+"""Local Streamlit UI for DSS coursework."""
 
 from datetime import date
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -13,7 +12,279 @@ from src.visualization.tables import winner_names
 
 
 # ============================================================
-# Sensitivity helpers
+# LABEL HELPERS
+# ============================================================
+
+def criterion_label(name):
+    """
+    Việt hóa tên các tiêu chí KPI dùng trong Mode 2.
+    Backend vẫn giữ nguyên tên cột tiếng Anh.
+    """
+
+    labels = {
+        "water_use_liters":
+            "Lượng nước sử dụng",
+
+        "soil_moisture_mae_points":
+            "Sai số độ ẩm đất",
+
+        "over_irrigation_liters":
+            "Lượng tưới vượt mức",
+
+        "replanning_response_days":
+            "Thời gian phản ứng khi điều chỉnh",
+
+        "missing_data_robustness":
+            "Khả năng chịu thiếu dữ liệu",
+    }
+
+    return labels.get(
+        name,
+        name,
+    )
+
+
+def vietnamese_dataframe(df):
+    """
+    Việt hóa tên cột/index chỉ phục vụ hiển thị UI.
+
+    Không thay đổi DataFrame gốc được sử dụng bởi
+    Hy-FWZIC, CODAS, simulator hoặc các pipeline.
+    """
+
+    result = df.copy()
+
+    column_labels = {
+        # ----------------------------------------------------
+        # Chung
+        # ----------------------------------------------------
+        "alternative":
+            "Phương án",
+
+        "criterion":
+            "Tiêu chí",
+
+        "scenario":
+            "Kịch bản",
+
+        "rank":
+            "Thứ hạng",
+
+        "weight":
+            "Trọng số",
+
+        # ----------------------------------------------------
+        # Hy-FWZIC
+        # ----------------------------------------------------
+        "mu":
+            "Độ thuộc μ",
+
+        "nu":
+            "Độ không thuộc ν",
+
+        "crisp":
+            "Giá trị rõ",
+
+        "expected_weight":
+            "Trọng số công bố",
+
+        "abs_error":
+            "Sai số tuyệt đối",
+
+        # ----------------------------------------------------
+        # CODAS
+        # ----------------------------------------------------
+        "H":
+            "Điểm CODAS H",
+
+        "E":
+            "Khoảng cách Euclid",
+
+        "T":
+            "Khoảng cách Taxicab",
+
+        # ----------------------------------------------------
+        # Dataset
+        # ----------------------------------------------------
+        "timestamp":
+            "Thời gian",
+
+        "sector_id":
+            "Khu vực",
+
+        "temperature_c":
+            "Nhiệt độ (°C)",
+
+        "humidity_percent":
+            "Độ ẩm không khí (%)",
+
+        "rain_mm":
+            "Lượng mưa (mm)",
+
+        "radiation_mj_m2":
+            "Bức xạ (MJ/m²)",
+
+        "historical_irrigation_liters":
+            "Lượng nước tưới lịch sử (L)",
+
+        "irrigation_duration_min":
+            "Thời gian tưới (phút)",
+
+        "soil_moisture_index":
+            "Chỉ số độ ẩm đất",
+
+        "next_soil_moisture_index":
+            "Độ ẩm đất ngày kế tiếp",
+
+        "sensor_missing":
+            "Thiếu dữ liệu cảm biến",
+
+        "scenario_sensor_outage":
+            "Mất cảm biến do kịch bản",
+
+        "demand_event":
+            "Có nhu cầu tưới",
+
+        "water_budget_liters":
+            "Giới hạn nước tưới (L)",
+
+        # ----------------------------------------------------
+        # Weather forecast
+        # ----------------------------------------------------
+        "temperature_c_forecast":
+            "Dự báo nhiệt độ (°C)",
+
+        "humidity_percent_forecast":
+            "Dự báo độ ẩm không khí (%)",
+
+        "rain_mm_forecast":
+            "Dự báo lượng mưa (mm)",
+
+        "radiation_mj_m2_forecast":
+            "Dự báo bức xạ (MJ/m²)",
+
+        # ----------------------------------------------------
+        # Strategy trace
+        # ----------------------------------------------------
+        "moisture_start_index":
+            "Độ ẩm đầu ngày",
+
+        "moisture_observation_index":
+            "Độ ẩm quan sát",
+
+        "moisture_end_index":
+            "Độ ẩm cuối ngày",
+
+        "irrigation_liters":
+            "Lượng nước tưới (L)",
+
+        "modeled_excess_irrigation_liters":
+            "Lượng tưới vượt mức (L)",
+
+        "modeled_feasible_demand_liters":
+            "Nhu cầu nước ước tính (L)",
+
+        "used_fallback":
+            "Có dùng cơ chế dự phòng",
+
+        "outside_training_range":
+            "Ngoài miền huấn luyện",
+
+        "environment_disturbance_points":
+            "Biến động môi trường",
+
+        "reason":
+            "Lý do quyết định",
+
+        # ----------------------------------------------------
+        # Validation / residuals
+        # ----------------------------------------------------
+        "observed_next_index":
+            "Độ ẩm thực tế ngày sau",
+
+        "predicted_next_index":
+            "Độ ẩm mô hình dự báo",
+
+        "persistence_next_index":
+            "Dự báo Persistence",
+
+        "residual":
+            "Sai số residual",
+
+        # ----------------------------------------------------
+        # Sensitivity
+        # ----------------------------------------------------
+        "winner":
+            "Phương án đứng đầu",
+
+        "top_alternative":
+            "Phương án đứng đầu",
+
+        "baseline_rank":
+            "Hạng ban đầu",
+
+        "sensitivity_rank":
+            "Hạng sau thay đổi",
+
+        "baseline_H":
+            "Điểm H ban đầu",
+
+        "sensitivity_H":
+            "Điểm H sau thay đổi",
+
+        "rank_change":
+            "Thay đổi thứ hạng",
+
+        "baseline_weight":
+            "Trọng số ban đầu",
+
+        "sensitivity_weight":
+            "Trọng số sau thay đổi",
+
+        # ----------------------------------------------------
+        # KPI
+        # ----------------------------------------------------
+        "water_use_liters":
+            "Lượng nước sử dụng (L)",
+
+        "soil_moisture_mae_points":
+            "Sai số độ ẩm đất",
+
+        "over_irrigation_liters":
+            "Lượng tưới vượt mức (L)",
+
+        "replanning_response_days":
+            "Thời gian phản ứng (ngày)",
+
+        "missing_data_robustness":
+            "Khả năng chịu thiếu dữ liệu",
+    }
+
+    result = result.rename(
+        columns={
+            col:
+                column_labels.get(
+                    col,
+                    criterion_label(col),
+                )
+            for col
+            in result.columns
+        }
+    )
+
+    # Nếu index là tên KPI thì Việt hóa luôn.
+    result = result.rename(
+        index=lambda value:
+            criterion_label(value)
+            if isinstance(value, str)
+            else value
+    )
+
+    return result
+
+
+# ============================================================
+# SENSITIVITY HELPERS
 # ============================================================
 
 def reweight_one_criterion(
@@ -22,10 +293,10 @@ def reweight_one_criterion(
     new_weight,
 ):
     """
-    Set one criterion to a requested weight and redistribute
-    the remaining mass proportionally across all other criteria.
+    Thay trọng số của một tiêu chí và phân bổ phần trọng số
+    còn lại theo đúng tỷ lệ tương đối ban đầu.
 
-    The result always sums to 1.
+    Tổng trọng số sau cùng luôn bằng 1.
     """
 
     weights = (
@@ -36,7 +307,7 @@ def reweight_one_criterion(
 
     if criterion not in weights.index:
         raise ValueError(
-            f"Unknown criterion: {criterion}"
+            f"Không tìm thấy tiêu chí: {criterion}"
         )
 
     new_weight = float(
@@ -45,8 +316,7 @@ def reweight_one_criterion(
 
     if not 0.0 < new_weight < 1.0:
         raise ValueError(
-            "Sensitivity weight must be "
-            "between 0 and 1."
+            "Trọng số mới phải nằm trong khoảng (0, 1)."
         )
 
     others = (
@@ -56,26 +326,25 @@ def reweight_one_criterion(
         )
     )
 
-    old_other_total = float(
+    other_total = float(
         others.sum()
     )
 
-    if old_other_total <= 0:
+    if other_total <= 0:
         raise ValueError(
-            "Cannot redistribute weights because "
-            "the remaining criteria have zero "
-            "total weight."
+            "Không thể phân bổ lại trọng số "
+            "cho các tiêu chí còn lại."
         )
 
-    remaining_mass = (
+    remaining = (
         1.0
         - new_weight
     )
 
     adjusted = (
         others
-        / old_other_total
-        * remaining_mass
+        / other_total
+        * remaining
     )
 
     result = (
@@ -90,7 +359,7 @@ def reweight_one_criterion(
         adjusted.index
     ] = adjusted
 
-    # Protect against tiny floating-point drift.
+    # tránh sai số floating point nhỏ
     result = (
         result
         / result.sum()
@@ -104,7 +373,7 @@ def ranking_comparison(
     sensitivity,
 ):
     """
-    Compare baseline CODAS ranking with a sensitivity run.
+    So sánh thứ hạng CODAS trước và sau khi thay đổi trọng số.
     """
 
     left = (
@@ -118,10 +387,10 @@ def ranking_comparison(
         .rename(
             columns={
                 "H":
-                    "baseline_H",
+                    "Điểm H ban đầu",
 
                 "rank":
-                    "baseline_rank",
+                    "Hạng ban đầu",
             }
         )
     )
@@ -137,10 +406,10 @@ def ranking_comparison(
         .rename(
             columns={
                 "H":
-                    "sensitivity_H",
+                    "Điểm H sau thay đổi",
 
                 "rank":
-                    "sensitivity_rank",
+                    "Hạng sau thay đổi",
             }
         )
     )
@@ -154,23 +423,32 @@ def ranking_comparison(
     )
 
     comparison[
-        "rank_change"
+        "Thay đổi hạng"
     ] = (
         comparison[
-            "baseline_rank"
+            "Hạng ban đầu"
         ]
         -
         comparison[
-            "sensitivity_rank"
+            "Hạng sau thay đổi"
         ]
+    )
+
+    comparison = (
+        comparison.rename(
+            columns={
+                "alternative":
+                    "Phương án",
+            }
+        )
     )
 
     return (
         comparison
         .sort_values(
             [
-                "sensitivity_rank",
-                "alternative",
+                "Hạng sau thay đổi",
+                "Phương án",
             ]
         )
         .reset_index(
@@ -180,35 +458,41 @@ def ranking_comparison(
 
 
 # ============================================================
-# Page configuration
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="DSS | Thắng + Quyên",
+    page_title="Hệ hỗ trợ ra quyết định nông nghiệp",
     page_icon="🌱",
     layout="wide",
 )
 
 st.title(
-    "Agriculture Decision Support Lab"
+    "🌱 Hệ hỗ trợ ra quyết định nông nghiệp"
 )
 
 st.caption(
-    "DSS coursework · Thắng + Quyên · "
-    "paper reproduction + irrigation proof-of-concept"
+    "Đồ án Hệ hỗ trợ ra quyết định · "
+    "Hy-FWZIC + CODAS · Agriculture 4.0"
 )
 
-mode = st.sidebar.radio(
-    "Mode",
-    [
-        "Mode 1 · Paper reproduction",
-        "Mode 2 · Irrigation simulation",
-    ],
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+st.sidebar.header(
+    "Chọn chế độ"
 )
 
-st.sidebar.markdown(
-    "**Scope**: Hy-FWZIC, CODAS, scenarios, "
-    "proxy strategies, KPI, sensitivity and validation."
+mode = (
+    st.sidebar.radio(
+        "Bạn muốn xem phần nào?",
+        [
+            "Mode 1 · Tái lập kết quả bài báo",
+            "Mode 2 · Thí nghiệm tưới thông minh",
+        ],
+    )
 )
 
 
@@ -221,22 +505,39 @@ if mode.startswith(
 ):
 
     st.header(
-        "13 ADSS · Hy-FWZIC → Hyperbolic CODAS"
+        "Mode 1 · Tái lập kết quả bài báo"
     )
+
+    st.info(
+        "Mục tiêu của Mode 1 là kiểm tra xem nhóm có thể "
+        "tái tạo lại trọng số Hy-FWZIC, kết quả CODAS "
+        "và phân tích độ nhạy của bài báo hay không."
+    )
+
+    # --------------------------------------------------------
+    # Controls
+    # --------------------------------------------------------
 
     source = (
         st.sidebar.selectbox(
-            "Weight source",
+            "Nguồn trọng số",
             [
                 "published",
                 "computed",
             ],
+            format_func=lambda value:
+                (
+                    "Trọng số công bố trong bài báo"
+                    if value == "published"
+                    else
+                    "Trọng số nhóm tính lại bằng Hy-FWZIC"
+                ),
         )
     )
 
     tau = (
         st.sidebar.slider(
-            "τ (paper Eq.16, close rule)",
+            "Ngưỡng τ của CODAS",
             min_value=0.0,
             max_value=0.05,
             value=0.02,
@@ -249,12 +550,16 @@ if mode.startswith(
         source,
     )
 
+    # --------------------------------------------------------
+    # Summary
+    # --------------------------------------------------------
+
     a, b, c = (
         st.columns(3)
     )
 
     a.metric(
-        "Top alternative",
+        "Phương án đứng đầu",
         run[
             "result"
         ]
@@ -264,45 +569,50 @@ if mode.startswith(
     )
 
     b.metric(
-        "Table 8 score matches",
+        "Khớp kết quả Bảng 8",
         f"{run['comparison'].score_within_tolerance.sum()}/13",
-    )   
+    )
 
     c.metric(
-        "Table 10 score matches",
+        "Khớp kết quả Bảng 10",
         f"{run['sensitivity_comparison'].score_within_tolerance.sum()}/104",
     )
 
-    st.info(
-        "Paper reference: DOI "
-        "10.1016/j.compag.2024.109618. "
-        "Tolerance 0.0011 for printed H; "
-        "ties use competition ranking. "
-        "τ=0.02 is a documented reproduction assumption."
-    )
+    # --------------------------------------------------------
+    # Tabs
+    # --------------------------------------------------------
 
-    t1, t2, t3, t4 = (
+    tab1, tab2, tab3 = (
         st.tabs(
             [
-                "Data & weights",
-                "Ranking",
-                "Sensitivity & stability",
-                "Validation & audit",
+                "1 · Dữ liệu & trọng số",
+                "2 · Kết quả xếp hạng",
+                "3 · Phân tích độ nhạy",
             ]
         )
     )
 
     # --------------------------------------------------------
-    # Mode 1 · Data & weights
+    # Tab 1
     # --------------------------------------------------------
 
-    with t1:
+    with tab1:
+
+        st.subheader(
+            "Ma trận đánh giá các ADSS"
+        )
 
         st.dataframe(
-            run[
-                "matrix"
-            ],
+            vietnamese_dataframe(
+                run[
+                    "matrix"
+                ]
+            ),
             width="stretch",
+        )
+
+        st.subheader(
+            "Trọng số tiêu chí"
         )
 
         st.bar_chart(
@@ -311,23 +621,36 @@ if mode.startswith(
             ]
         )
 
+        st.subheader(
+            "So sánh trọng số tính lại với bài báo"
+        )
+
         st.dataframe(
-            run[
-                "weight_comparison"
-            ],
+            vietnamese_dataframe(
+                run[
+                    "weight_comparison"
+                ]
+            ),
+            hide_index=True,
             width="stretch",
         )
 
     # --------------------------------------------------------
-    # Mode 1 · Ranking
+    # Tab 2
     # --------------------------------------------------------
 
-    with t2:
+    with tab2:
+
+        st.subheader(
+            "Kết quả xếp hạng CODAS"
+        )
 
         st.dataframe(
-            run[
-                "result"
-            ].ranking,
+            vietnamese_dataframe(
+                run[
+                    "result"
+                ].ranking
+            ),
             hide_index=True,
             width="stretch",
         )
@@ -344,77 +667,78 @@ if mode.startswith(
         )
 
     # --------------------------------------------------------
-    # Mode 1 · Sensitivity
+    # Tab 3
     # --------------------------------------------------------
 
-    with t3:
+    with tab3:
+
+        st.write(
+            "Phân tích độ nhạy kiểm tra xem thứ hạng "
+            "có thay đổi khi trọng số tiêu chí thay đổi hay không."
+        )
 
         choice = (
             st.selectbox(
-                "Weight scenario",
+                "Chọn kịch bản thay đổi trọng số",
                 run[
                     "sensitivity_summary"
                 ].scenario,
             )
         )
 
-        st.dataframe(
-            run[
-                "sensitivity_summary"
-            ],
-            hide_index=True,
-            width="stretch",
+        st.subheader(
+            "Tổng hợp các kịch bản"
         )
 
         st.dataframe(
-            run[
-                "sensitivity"
-            ].query(
-                "scenario == @choice"
+            vietnamese_dataframe(
+                run[
+                    "sensitivity_summary"
+                ]
             ),
             hide_index=True,
             width="stretch",
         )
 
-    # --------------------------------------------------------
-    # Mode 1 · Validation
-    # --------------------------------------------------------
-
-    with t4:
-
-        st.dataframe(
-            run[
-                "comparison"
-            ],
-            hide_index=True,
-            width="stretch",
+        st.subheader(
+            "Chi tiết kịch bản đang chọn"
         )
 
         st.dataframe(
-            run[
-                "sensitivity_comparison"
-            ],
-            hide_index=True,
-            width="stretch",
-        )
-
-        st.dataframe(
-            run[
-                "result"
-            ].relative,
-            width="stretch",
-        )
-
-        st.download_button(
-            "Download validation CSV",
-            run[
-                "comparison"
-            ].to_csv(
-                index=False
+            vietnamese_dataframe(
+                run[
+                    "sensitivity"
+                ].query(
+                    "scenario == @choice"
+                )
             ),
-            "paper_validation.csv",
-            "text/csv",
+            hide_index=True,
+            width="stretch",
         )
+
+        with st.expander(
+            "Xem đối chiếu reproduction chi tiết"
+        ):
+
+            st.dataframe(
+                vietnamese_dataframe(
+                    run[
+                        "comparison"
+                    ]
+                ),
+                hide_index=True,
+                width="stretch",
+            )
+
+            st.dataframe(
+                vietnamese_dataframe(
+                    run[
+                        "sensitivity_comparison"
+                    ]
+                ),
+                hide_index=True,
+                width="stretch",
+            )
 
 
 # ============================================================
@@ -424,23 +748,47 @@ if mode.startswith(
 else:
 
     st.header(
-        "Uploaded Arnesano data · open-field tomato"
+        "Mode 2 · Thí nghiệm tưới thông minh"
+    )
+
+    st.info(
+        "Mode 2 là phần mở rộng của nhóm: "
+        "sử dụng dữ liệu tưới thực tế để so sánh "
+        "SIDSS-like, FDSS-like và MRGCD-like."
     )
 
     # --------------------------------------------------------
-    # Sidebar controls
+    # Sidebar configuration
     # --------------------------------------------------------
+
+    st.sidebar.header(
+        "Thiết lập thí nghiệm"
+    )
 
     scenario = (
         st.sidebar.selectbox(
-            "Operational scenario",
+            "Kịch bản môi trường",
             SCENARIOS,
+            format_func=lambda value:
+                {
+                    "Normal":
+                        "Bình thường",
+
+                    "Drought":
+                        "Hạn hán",
+
+                    "Missing Sensor":
+                        "Mất dữ liệu cảm biến",
+                }.get(
+                    value,
+                    value,
+                ),
         )
     )
 
     sector = (
         st.sidebar.selectbox(
-            "Tomato sector",
+            "Khu vực cà chua",
             [
                 1,
                 2,
@@ -450,7 +798,7 @@ else:
 
     period = (
         st.sidebar.date_input(
-            "Evaluation period",
+            "Khoảng thời gian đánh giá",
             (
                 date(
                     2025,
@@ -476,19 +824,17 @@ else:
         )
     )
 
-    if len(
-        period
-    ) != 2:
+    if len(period) != 2:
 
-        st.info(
-            "Select both evaluation "
-            "start and end."
+        st.warning(
+            "Vui lòng chọn đủ ngày bắt đầu "
+            "và ngày kết thúc."
         )
 
         st.stop()
 
     # --------------------------------------------------------
-    # Execute Mode 2
+    # Execute pipeline
     # --------------------------------------------------------
 
     try:
@@ -530,62 +876,41 @@ else:
     )
 
     # --------------------------------------------------------
-    # Research-integrity notices
+    # Research integrity
     # --------------------------------------------------------
 
-    st.info(
-        "REAL INPUT DATA: uploaded sensor/valve series plus "
-        "historical reanalysis weather. Volumes are nominal-flow "
-        "litres; soil readings are relative probe-index points, "
-        "not calibrated VWC. No mock fallback."
-    )
-
-    st.warning(
-        "MODELLED OUTCOMES: the actions of SIDSS-like, FDSS-like "
-        "and MRGCD-like were not observed in the field. "
-        "They are reconstructed proxy strategies inspired by "
-        "the original ADSS descriptions, not the original systems. "
-        "Expert preferences remain illustrative. "
-        "Drought and sensor-outage cases are what-if transformations."
-    )
-
-    if not q[
-        "model_beats_persistence_mae"
-    ]:
-
-        st.warning(
-            "Validation: the fitted response model does not beat "
-            "simple persistence on this holdout. "
-            "Treat rankings as exploratory."
-        )
-
-    if q[
-        "weak_irrigation_response"
-    ]:
-
-        st.caption(
-            "The learned irrigation response is weak. "
-            "Small score differences and ties do not establish "
-            "a reliable field winner."
-        )
-
-    if (
-        max(
-            q[
-                "out_of_training_range_steps"
-            ].values()
-        )
-        > 0
+    with st.expander(
+        "Lưu ý về phạm vi nghiên cứu"
     ):
 
-        st.warning(
-            "Extrapolation: some simulated inputs are outside "
-            "the training feature ranges; see Source & model "
-            "validation for counts. Rankings are exploratory."
+        st.write(
+            "• Dữ liệu đầu vào là dữ liệu cảm biến/van tưới "
+            "thực tế kết hợp dữ liệu thời tiết tái phân tích."
+        )
+
+        st.write(
+            "• SIDSS-like, FDSS-like và MRGCD-like là các "
+            "chiến lược proxy được nhóm tái dựng dựa trên "
+            "mô tả của các hệ thống gốc."
+        )
+
+        st.write(
+            "• Đây không phải mã nguồn chính thức "
+            "của SIDSS, FDSS hoặc MRGCD."
+        )
+
+        st.write(
+            "• Kết quả là kết quả mô phỏng phản thực "
+            "(counterfactual/modelled outcomes), "
+            "chưa phải kết quả kiểm chứng ngoài đồng ruộng."
+        )
+
+        st.write(
+            "• Trọng số chuyên gia hiện tại mang tính minh họa."
         )
 
     # --------------------------------------------------------
-    # Main headline metrics
+    # Top summary
     # --------------------------------------------------------
 
     winners = (
@@ -596,19 +921,36 @@ else:
         )
     )
 
-    a, b, c = (
-        st.columns(3)
+    a, b, c, d = (
+        st.columns(4)
     )
 
     a.metric(
-        "Top alternative(s)",
+        "Kịch bản",
+        {
+            "Normal":
+                "Bình thường",
+
+            "Drought":
+                "Hạn hán",
+
+            "Missing Sensor":
+                "Mất cảm biến",
+        }.get(
+            scenario,
+            scenario,
+        ),
+    )
+
+    b.metric(
+        "Phương án đứng đầu",
         ", ".join(
             winners
         ),
     )
 
-    b.metric(
-        "Daily steps",
+    c.metric(
+        "Số ngày đánh giá",
         len(
             run[
                 "dataset"
@@ -616,62 +958,114 @@ else:
         ),
     )
 
-    c.metric(
-        "Sector",
-        (
-            f"ARNESANO_TOMATO_"
-            f"{sector}"
-        ),
-    )
-
-    # --------------------------------------------------------
-    # Mode 2 tabs
-    # --------------------------------------------------------
-
-    (
-        t1,
-        t2,
-        t3,
-        t4,
-        t5,
-        t6,
-    ) = st.tabs(
-        [
-            "Experiment flow",
-            "Data & weights",
-            "KPI & ranking",
-            "Scenario traces",
-            "Sensitivity lab",
-            "Source & model validation",
-        ]
+    d.metric(
+        "Khu vực",
+        f"Sector {sector}",
     )
 
     # ========================================================
-    # TAB 1 · EXPERIMENT FLOW
+    # MAIN TABS
     # ========================================================
 
-    with t1:
+    tab1, tab2, tab3 = (
+        st.tabs(
+            [
+                "1 · Tổng quan thí nghiệm",
+                "2 · Kết quả & xếp hạng",
+                "3 · Phân tích độ nhạy",
+            ]
+        )
+    )
+
+    # ========================================================
+    # TAB 1 · OVERVIEW
+    # ========================================================
+
+    with tab1:
 
         st.subheader(
-            "Mode 2 decision flow"
+            "Flow của một lần chạy"
         )
 
-        st.caption(
-            "Follow the complete path from real operational "
-            "input to the final MCDM ranking."
+        st.markdown(
+            """
+**Bước 1 · Chọn dữ liệu và kịch bản**
+
+Dữ liệu cảm biến, van tưới và thời tiết được lấy theo
+sector và khoảng thời gian đã chọn.
+
+↓
+
+**Bước 2 · Tiền xử lý dữ liệu**
+
+Dữ liệu được tổng hợp theo ngày và tạo các biến cần thiết
+cho thí nghiệm.
+
+↓
+
+**Bước 3 · Xây dựng mô hình phản ứng độ ẩm đất**
+
+Mô hình surrogate được học chỉ từ dữ liệu trước giai đoạn
+đánh giá.
+
+↓
+
+**Bước 4 · Tạo biến động môi trường**
+
+Sai số mô hình trên dữ liệu huấn luyện được replay để
+môi trường mô phỏng không trở thành một vòng lặp lý tưởng.
+
+↓
+
+**Bước 5 · Chạy ba chiến lược tưới**
+
+- SIDSS-like
+- FDSS-like
+- MRGCD-like
+
+↓
+
+**Bước 6 · Tính KPI**
+
+Kết quả của mỗi chiến lược được chuyển thành ma trận KPI.
+
+↓
+
+**Bước 7 · Hy-FWZIC**
+
+Hy-FWZIC xác định mức độ quan trọng của các tiêu chí.
+
+↓
+
+**Bước 8 · CODAS**
+
+CODAS kết hợp KPI và trọng số để xếp hạng các phương án.
+
+↓
+
+**Bước 9 · Phân tích độ nhạy**
+
+Thay đổi trọng số tiêu chí và chạy CODAS lại để kiểm tra
+độ ổn định của kết quả.
+"""
         )
 
-        f1, f2, f3, f4 = (
-            st.columns(4)
+        st.divider()
+
+        # ----------------------------------------------------
+        # Dataset information
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Thông tin thí nghiệm"
         )
 
-        f1.metric(
-            "Scenario",
-            scenario,
+        c1, c2, c3 = (
+            st.columns(3)
         )
 
-        f2.metric(
-            "Evaluation days",
+        c1.metric(
+            "Số ngày đánh giá",
             len(
                 run[
                     "dataset"
@@ -679,8 +1073,8 @@ else:
             ),
         )
 
-        f3.metric(
-            "Training residuals",
+        c2.metric(
+            "Residual huấn luyện",
             len(
                 run[
                     "training_residuals"
@@ -688,7 +1082,7 @@ else:
             ),
         )
 
-        f4.metric(
+        c3.metric(
             "Disturbance replay",
             len(
                 run[
@@ -697,386 +1091,102 @@ else:
             ),
         )
 
-        st.markdown(
-            """
-### 1 · Real operational input
-
-Sensor, valve and reanalysis-weather data are loaded for the
-selected sector and evaluation period.
-
-↓
-
-### 2 · Preprocessing
-
-Raw observations are converted to daily decision inputs.
-Weather forecasts use one-day persistence.
-
-↓
-
-### 3 · Soil-response surrogate
-
-A constrained chronological ridge model is fitted only using
-transitions strictly before the evaluation period.
-
-↓
-
-### 4 · Training-residual disturbance replay
-
-Pre-evaluation training residuals are used as a deterministic
-environment-disturbance sequence.
-
-Evaluation-period future soil-moisture outcomes are **not**
-used to construct this sequence.
-
-↓
-
-### 5 · Run three proxy irrigation strategies
-
-The same scenario and same disturbance sequence are passed to:
-
-- SIDSS-like
-- FDSS-like
-- MRGCD-like
-
-↓
-
-### 6 · KPI evaluation
-
-Each strategy is converted to a performance profile:
-
-- water use
-- soil-moisture MAE
-- over-irrigation
-- replanning response
-- missing-data robustness
-
-↓
-
-### 7 · Hy-FWZIC criteria weighting
-
-Illustrative linguistic decision-maker preferences are converted
-to criterion weights.
-
-↓
-
-### 8 · Baseline CODAS ranking
-
-The KPI performance matrix and criterion weights are combined
-to obtain the baseline ranking.
-
-↓
-
-### 9 · Sensitivity analysis
-
-Criterion weights are perturbed and CODAS is executed again.
-
-↓
-
-### 10 · Stability interpretation
-
-The new ranking is compared with the baseline to identify:
-
-- stable winners
-- ties
-- rank changes
-- possible rank reversal
-"""
-        )
-
         # ----------------------------------------------------
-        # Step details
+        # Dataset
         # ----------------------------------------------------
 
         with st.expander(
-            "Step 1–2 · Scenario input and preprocessing"
+            "Xem dữ liệu đầu vào"
         ):
 
-            st.caption(
-                f"Evaluation: "
-                f'{q["evaluation_start"]} '
-                f'to {q["evaluation_end"]}.'
-            )
-
             st.dataframe(
-                run[
-                    "dataset"
-                ].head(
-                    20
+                vietnamese_dataframe(
+                    run[
+                        "dataset"
+                    ]
                 ),
                 hide_index=True,
                 width="stretch",
             )
+
+        # ----------------------------------------------------
+        # Training residuals
+        # ----------------------------------------------------
 
         with st.expander(
-            "Step 3–4 · Surrogate and disturbance"
+            "Xem residual dùng để tạo biến động môi trường"
         ):
 
-            e1, e2, e3 = (
-                st.columns(3)
-            )
-
-            e1.metric(
-                "Holdout MAE",
-                (
-                    f'{q["holdout_mae_points"]:.3f}'
-                ),
-            )
-
-            e2.metric(
-                "Persistence MAE",
-                (
-                    f'{q["persistence_mae_points"]:.3f}'
-                ),
-            )
-
-            e3.metric(
-                "Disturbance MAE",
-                (
-                    f'{q["disturbance_mae_points"]:.3f}'
-                ),
-            )
-
-            st.markdown(
-                "**Training residual library**"
-            )
-
             st.dataframe(
-                run[
-                    "training_residuals"
-                ].head(
-                    20
+                vietnamese_dataframe(
+                    run[
+                        "training_residuals"
+                    ]
                 ),
                 hide_index=True,
                 width="stretch",
             )
 
-            disturbance_frame = (
-                pd.DataFrame(
-                    {
-                        "step":
-                            np.arange(
-                                len(
-                                    run[
-                                        "disturbances"
-                                    ]
-                                )
-                            ),
+        # ----------------------------------------------------
+        # Strategy trace
+        # ----------------------------------------------------
 
-                        "disturbance_points":
-                            run[
-                                "disturbances"
-                            ],
-                    }
+        with st.expander(
+            "Xem chi tiết mô phỏng từng chiến lược"
+        ):
+
+            strategy = (
+                st.selectbox(
+                    "Chọn chiến lược",
+                    list(
+                        run[
+                            "traces"
+                        ]
+                    ),
+                    key=(
+                        "trace_strategy"
+                    ),
                 )
             )
 
-            st.markdown(
-                "**Disturbance sequence used in the evaluation**"
-            )
-
             st.dataframe(
-                disturbance_frame,
-                hide_index=True,
-                width="stretch",
-            )
-
-            st.line_chart(
-                disturbance_frame
-                .set_index(
-                    "step"
-                )
-            )
-
-        with st.expander(
-            "Step 5 · Strategy simulation"
-        ):
-
-            strategy_trace = (
-                pd.concat(
+                vietnamese_dataframe(
                     run[
                         "traces"
-                    ].values(),
-                    ignore_index=True,
-                )
-            )
-
-            trace_columns = [
-                "timestamp",
-                "alternative",
-                "moisture_start_index",
-                "moisture_observation_index",
-                "irrigation_liters",
-                "environment_disturbance_points",
-                "moisture_end_index",
-                "used_fallback",
-            ]
-
-            available_trace_columns = [
-                col
-                for col
-                in trace_columns
-                if col
-                in strategy_trace.columns
-            ]
-
-            st.dataframe(
-                strategy_trace[
-                    available_trace_columns
-                ].head(
-                    50
+                    ][
+                        strategy
+                    ]
                 ),
                 hide_index=True,
                 width="stretch",
             )
 
-        with st.expander(
-            "Step 6 · KPI performance matrix"
-        ):
+    # ========================================================
+    # TAB 2 · RESULT
+    # ========================================================
 
-            st.dataframe(
+    with tab2:
+
+        # ----------------------------------------------------
+        # KPI
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Bước 1 · Ma trận KPI của ba phương án"
+        )
+
+        st.write(
+            "Ma trận này là đầu vào cho CODAS. "
+            "Mỗi hàng là một chiến lược tưới; "
+            "mỗi cột là một tiêu chí đánh giá."
+        )
+
+        st.dataframe(
+            vietnamese_dataframe(
                 run[
                     "matrix"
-                ],
-                width="stretch",
-            )
-
-        with st.expander(
-            "Step 7 · Hy-FWZIC weights"
-        ):
-
-            st.dataframe(
-                run[
-                    "weights"
                 ]
-                .rename(
-                    "weight"
-                )
-                .to_frame(),
-                width="stretch",
-            )
-
-            st.bar_chart(
-                run[
-                    "weights"
-                ]
-            )
-
-        with st.expander(
-            "Step 8 · Baseline CODAS ranking"
-        ):
-
-            st.dataframe(
-                run[
-                    "result"
-                ].ranking,
-                hide_index=True,
-                width="stretch",
-            )
-
-            st.bar_chart(
-                run[
-                    "result"
-                ]
-                .ranking
-                .set_index(
-                    "alternative"
-                )
-                .H
-            )
-
-        st.info(
-            "Continue to the Sensitivity lab tab to perturb one "
-            "criterion weight and observe how CODAS re-ranks the "
-            "three alternatives."
-        )
-
-    # ========================================================
-    # TAB 2 · DATA & WEIGHTS
-    # ========================================================
-
-    with t2:
-
-        st.caption(
-            f'Evaluation: {q["evaluation_start"]} '
-            f'to {q["evaluation_end"]}. '
-            "Forecasts are previous-day persistence. "
-            "Model fitted before evaluation."
-        )
-
-        st.subheader(
-            "Scenario input"
-        )
-
-        st.dataframe(
-            run[
-                "dataset"
-            ],
-            hide_index=True,
-            width="stretch",
-        )
-
-        st.subheader(
-            "Criteria"
-        )
-
-        st.dataframe(
-            run[
-                "criteria"
-            ],
-            width="stretch",
-        )
-
-        st.caption(
-            "Weights use illustrative decision-maker judgments. "
-            "This dataset itself supplies no expert preferences."
-        )
-
-        st.subheader(
-            "Hy-FWZIC weights"
-        )
-
-        st.bar_chart(
-            run[
-                "weights"
-            ]
-        )
-
-        st.dataframe(
-            run[
-                "weights"
-            ]
-            .rename(
-                "weight"
-            )
-            .to_frame(),
-            width="stretch",
-        )
-
-        st.download_button(
-            "Download scenario input CSV",
-            run[
-                "dataset"
-            ].to_csv(
-                index=False
             ),
-            "scenario_input_real.csv",
-            "text/csv",
-        )
-
-    # ========================================================
-    # TAB 3 · KPI & RANKING
-    # ========================================================
-
-    with t3:
-
-        st.subheader(
-            "Performance matrix"
-        )
-
-        st.dataframe(
-            run[
-                "matrix"
-            ],
             width="stretch",
         )
 
@@ -1101,138 +1211,182 @@ The new ranking is compared with the baseline to identify:
 
         if constants:
 
-            st.caption(
-                "Non-discriminating KPI columns in this run: "
+            st.info(
+                "Trong lần chạy này, các KPI sau "
+                "không giúp phân biệt ba phương án: "
                 +
                 ", ".join(
-                    constants
+                    criterion_label(
+                        col
+                    )
+                    for col
+                    in constants
                 )
             )
 
-        st.caption(
-            "Water = litres; soil error = probe-index points. "
-            "Excess water and response are model-based proxies. "
-            "Ties are retained; robustness=1 can mean no additional "
-            "measured degradation under this paired stress test."
-        )
+        # ----------------------------------------------------
+        # Weights
+        # ----------------------------------------------------
 
         st.subheader(
-            "Baseline CODAS ranking"
+            "Bước 2 · Trọng số tiêu chí từ Hy-FWZIC"
+        )
+
+        weights_display = (
+            run[
+                "weights"
+            ]
+            .rename(
+                index=criterion_label
+            )
+        )
+
+        st.bar_chart(
+            weights_display
         )
 
         st.dataframe(
+            weights_display
+            .rename(
+                "Trọng số"
+            )
+            .to_frame(),
+            width="stretch",
+        )
+
+        # ----------------------------------------------------
+        # CODAS
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Bước 3 · Xếp hạng bằng CODAS"
+        )
+
+        ranking = (
             run[
                 "result"
-            ].ranking,
+            ].ranking
+        )
+
+        st.dataframe(
+            vietnamese_dataframe(
+                ranking
+            ),
             hide_index=True,
             width="stretch",
         )
 
         st.bar_chart(
-            run[
-                "result"
-            ]
-            .ranking
+            ranking
             .set_index(
                 "alternative"
             )
             .H
         )
 
-        st.download_button(
-            "Download performance matrix",
-            run[
-                "matrix"
-            ].to_csv(),
-            "performance_matrix_real.csv",
-            "text/csv",
-        )
-
-    # ========================================================
-    # TAB 4 · SCENARIO TRACES
-    # ========================================================
-
-    with t4:
-
-        traces = (
-            pd.concat(
-                run[
-                    "traces"
-                ].values(),
-                ignore_index=True,
-            )
-        )
-
-        st.caption(
-            "Closed-loop surrogate trajectories, not measured "
-            "field outcomes of these alternative policies."
-        )
+        # ----------------------------------------------------
+        # Automatic interpretation
+        # ----------------------------------------------------
 
         st.subheader(
-            "Moisture trajectory"
+            "Cách đọc kết quả"
         )
 
-        st.line_chart(
-            traces.pivot(
-                index="timestamp",
-                columns="alternative",
-                values="moisture_end_index",
+        if len(
+            winners
+        ) == 1:
+
+            st.success(
+                f"Trong kịch bản này, {winners[0]} "
+                "đang có thứ hạng CODAS cao nhất."
             )
-        )
 
-        st.subheader(
-            "Irrigation decisions"
-        )
+        else:
 
-        st.bar_chart(
-            traces.pivot(
-                index="timestamp",
-                columns="alternative",
-                values="irrigation_liters",
+            st.info(
+                "Có đồng hạng ở vị trí thứ nhất: "
+                +
+                ", ".join(
+                    winners
+                )
+                +
+                ". Đây là kết quả hợp lệ, không cần "
+                "cố phá tie."
             )
-        )
 
-        name = (
-            st.selectbox(
-                "Inspect strategy trace",
-                list(
+        if not q[
+            "model_beats_persistence_mae"
+        ]:
+
+            st.warning(
+                "Mô hình surrogate hiện chưa vượt rõ "
+                "baseline persistence trên holdout. "
+                "Do đó kết quả xếp hạng chỉ nên được "
+                "xem là kết quả thăm dò / proof-of-concept."
+            )
+
+        # ----------------------------------------------------
+        # Optional trajectory
+        # ----------------------------------------------------
+
+        with st.expander(
+            "Xem biểu đồ độ ẩm và lượng nước tưới"
+        ):
+
+            traces = (
+                pd.concat(
                     run[
                         "traces"
-                    ]
-                ),
+                    ].values(),
+                    ignore_index=True,
+                )
             )
-        )
 
-        st.dataframe(
-            run[
-                "traces"
-            ][
-                name
-            ],
-            hide_index=True,
-            width="stretch",
-        )
+            st.markdown(
+                "**Độ ẩm đất mô phỏng**"
+            )
+
+            st.line_chart(
+                traces.pivot(
+                    index="timestamp",
+                    columns="alternative",
+                    values="moisture_end_index",
+                )
+            )
+
+            st.markdown(
+                "**Lượng nước tưới theo ngày**"
+            )
+
+            st.bar_chart(
+                traces.pivot(
+                    index="timestamp",
+                    columns="alternative",
+                    values="irrigation_liters",
+                )
+            )
 
     # ========================================================
-    # TAB 5 · INTERACTIVE SENSITIVITY LAB
+    # TAB 3 · SENSITIVITY
     # ========================================================
 
-    with t5:
+    with tab3:
 
         st.subheader(
-            "Interactive sensitivity experiment"
+            "Nếu thay đổi mức độ quan trọng của tiêu chí thì sao?"
         )
 
-        st.caption(
-            "Change the importance of one criterion. "
-            "The remaining criterion weights are redistributed "
-            "proportionally and CODAS is executed again."
+        st.write(
+            "Ở bước này, KPI của kịch bản được giữ nguyên. "
+            "Ta chỉ thay đổi trọng số của một tiêu chí, "
+            "phân bổ lại phần trọng số còn lại, "
+            "sau đó chạy CODAS lại."
         )
 
         st.info(
-            "This is a sensitivity weight perturbation. "
-            "It does not represent a new expert elicitation or "
-            "a new Hy-FWZIC survey."
+            "Đây là phân tích độ nhạy của trọng số. "
+            "Không phải thu thập lại ý kiến chuyên gia "
+            "và không phải chạy Hy-FWZIC từ đầu."
         )
 
         baseline_weights = (
@@ -1243,56 +1397,61 @@ The new ranking is compared with the baseline to identify:
             .copy()
         )
 
-        criterion = (
+        selected_criterion = (
             st.selectbox(
-                "Criterion to stress",
+                "Chọn tiêu chí muốn thay đổi",
                 list(
                     baseline_weights.index
                 ),
+                format_func=criterion_label,
                 key=(
-                    "mode2_sensitivity_criterion"
+                    "sensitivity_criterion"
                 ),
             )
         )
 
         baseline_weight = float(
             baseline_weights.loc[
-                criterion
+                selected_criterion
             ]
-        )
-
-        default_slider_weight = float(
-            min(
-                max(
-                    baseline_weight,
-                    0.05,
-                ),
-                0.60,
-            )
         )
 
         new_weight = (
             st.slider(
-                "New criterion weight",
+                "Trọng số mới",
                 min_value=0.05,
                 max_value=0.60,
-                value=(
-                    default_slider_weight
+                value=float(
+                    min(
+                        max(
+                            baseline_weight,
+                            0.05,
+                        ),
+                        0.60,
+                    )
                 ),
                 step=0.01,
                 key=(
-                    "mode2_sensitivity_weight"
+                    "sensitivity_weight"
                 ),
             )
         )
 
+        # ----------------------------------------------------
+        # Reweight
+        # ----------------------------------------------------
+
         sensitivity_weights = (
             reweight_one_criterion(
                 baseline_weights,
-                criterion,
+                selected_criterion,
                 new_weight,
             )
         )
+
+        # ----------------------------------------------------
+        # CODAS rerun
+        # ----------------------------------------------------
 
         sensitivity_result = (
             crisp_codas(
@@ -1357,192 +1516,125 @@ The new ranking is compared with the baseline to identify:
             )
         )
 
-        rank_changed = bool(
-            (
-                comparison[
-                    "baseline_rank"
-                ]
-                !=
-                comparison[
-                    "sensitivity_rank"
-                ]
-            ).any()
-        )
-
-        s1, s2, s3, s4 = (
-            st.columns(4)
-        )
-
-        s1.metric(
-            "Criterion",
-            criterion,
-        )
-
-        s2.metric(
-            "Baseline weight",
-            f"{baseline_weight:.3f}",
-        )
-
-        s3.metric(
-            "New weight",
-            f"{new_weight:.3f}",
-        )
-
-        s4.metric(
-            "Winner changed?",
-            (
-                "YES"
-                if winner_changed
-                else "NO"
-            ),
-        )
-
         # ----------------------------------------------------
-        # Sensitivity flow
+        # Flow
         # ----------------------------------------------------
 
-        st.markdown(
-            "### Sensitivity flow"
+        st.subheader(
+            "Flow phân tích độ nhạy"
         )
 
         st.code(
             (
-                f"Scenario: {scenario}\n"
+                f"Kịch bản: {scenario}\n"
                 "\n"
-                "KPI performance matrix\n"
+                "Ma trận KPI hiện tại\n"
                 "        ↓\n"
-                "Baseline Hy-FWZIC weights\n"
+                "Trọng số Hy-FWZIC ban đầu\n"
                 "        ↓\n"
-                "Baseline CODAS ranking\n"
+                "CODAS ban đầu\n"
                 "        ↓\n"
-                f"Stress criterion: {criterion}\n"
-                f"{baseline_weight:.4f} "
-                f"→ {new_weight:.4f}\n"
+                f"Thay đổi tiêu chí: "
+                f"{criterion_label(selected_criterion)}\n"
+                f"{baseline_weight:.3f} "
+                f"→ {new_weight:.3f}\n"
                 "        ↓\n"
-                "Redistribute remaining weight mass\n"
+                "Phân bổ lại trọng số còn lại\n"
                 "        ↓\n"
-                "Run CODAS again\n"
+                "Chạy CODAS lại\n"
                 "        ↓\n"
-                "Compare rank and winner stability"
+                "So sánh thứ hạng"
             ),
             language=None,
+        )
+
+        # ----------------------------------------------------
+        # Summary
+        # ----------------------------------------------------
+
+        s1, s2, s3 = (
+            st.columns(3)
+        )
+
+        s1.metric(
+            "Trọng số ban đầu",
+            f"{baseline_weight:.3f}",
+        )
+
+        s2.metric(
+            "Trọng số mới",
+            f"{new_weight:.3f}",
+        )
+
+        s3.metric(
+            "Phương án đứng đầu có đổi không?",
+            (
+                "Có"
+                if winner_changed
+                else
+                "Không"
+            ),
         )
 
         # ----------------------------------------------------
         # Weight comparison
         # ----------------------------------------------------
 
-        left, right = (
-            st.columns(2)
-        )
+        with st.expander(
+            "Xem trọng số trước và sau thay đổi"
+        ):
 
-        with left:
+            compare_weights = (
+                pd.DataFrame(
+                    {
+                        "Trọng số ban đầu":
+                            baseline_weights,
 
-            st.markdown(
-                "**Baseline weights**"
+                        "Trọng số mới":
+                            sensitivity_weights,
+                    }
+                )
             )
+
+            compare_weights.index = [
+                criterion_label(
+                    name
+                )
+                for name
+                in compare_weights.index
+            ]
 
             st.dataframe(
-                baseline_weights
-                .rename(
-                    "baseline_weight"
-                )
-                .to_frame(),
-                width="stretch",
-            )
-
-        with right:
-
-            st.markdown(
-                "**Sensitivity weights**"
-            )
-
-            st.dataframe(
-                sensitivity_weights
-                .rename(
-                    "sensitivity_weight"
-                )
-                .to_frame(),
+                compare_weights,
                 width="stretch",
             )
 
         # ----------------------------------------------------
-        # Weight comparison table
+        # Rank comparison
         # ----------------------------------------------------
 
-        weight_comparison = (
-            pd.DataFrame(
-                {
-                    "baseline_weight":
-                        baseline_weights,
-
-                    "sensitivity_weight":
-                        sensitivity_weights,
-                }
-            )
-        )
-
-        weight_comparison[
-            "delta"
-        ] = (
-            weight_comparison[
-                "sensitivity_weight"
-            ]
-            -
-            weight_comparison[
-                "baseline_weight"
-            ]
-        )
-
-        st.markdown(
-            "### Weight perturbation"
-        )
-
-        st.dataframe(
-            weight_comparison,
-            width="stretch",
-        )
-
-        # ----------------------------------------------------
-        # Baseline ranking
-        # ----------------------------------------------------
-
-        st.markdown(
-            "### Baseline CODAS"
-        )
-
-        st.dataframe(
-            run[
-                "result"
-            ].ranking,
-            hide_index=True,
-            width="stretch",
-        )
-
-        # ----------------------------------------------------
-        # Sensitivity ranking
-        # ----------------------------------------------------
-
-        st.markdown(
-            "### CODAS after perturbation"
-        )
-
-        st.dataframe(
-            sensitivity_result.ranking,
-            hide_index=True,
-            width="stretch",
-        )
-
-        # ----------------------------------------------------
-        # Ranking comparison
-        # ----------------------------------------------------
-
-        st.markdown(
-            "### Baseline → sensitivity comparison"
+        st.subheader(
+            "So sánh thứ hạng trước và sau"
         )
 
         st.dataframe(
             comparison,
+            hide_index=True,
+            width="stretch",
+        )
+
+        # ----------------------------------------------------
+        # New ranking
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Kết quả CODAS sau khi thay đổi trọng số"
+        )
+
+        st.dataframe(
+            vietnamese_dataframe(
+                sensitivity_result.ranking
+            ),
             hide_index=True,
             width="stretch",
         )
@@ -1556,123 +1648,104 @@ The new ranking is compared with the baseline to identify:
             .H
         )
 
+        # ----------------------------------------------------
+        # Interpretation
+        # ----------------------------------------------------
+
         if winner_changed:
 
             st.warning(
-                "Winner-set reversal detected: "
-                "the rank-1 alternative set changed "
-                "under this weight perturbation."
-            )
-
-        elif rank_changed:
-
-            st.warning(
-                "The winner set is unchanged, but at least "
-                "one alternative changed rank."
+                "Có thay đổi ở tập phương án đứng đầu. "
+                "Kết quả lựa chọn nhạy với thay đổi "
+                "trọng số này."
             )
 
         else:
 
             st.success(
-                "No ranking change under this "
-                "weight perturbation."
+                "Phương án đứng đầu không thay đổi "
+                "ở mức trọng số hiện tại."
             )
 
         # ----------------------------------------------------
-        # Predefined sensitivity scenarios
+        # Predefined scenarios
         # ----------------------------------------------------
 
         with st.expander(
-            "Predefined sensitivity scenarios"
+            "Xem các kịch bản độ nhạy tự động của hệ thống"
         ):
 
-            st.caption(
-                "These are the automated sensitivity runs "
-                "already generated by the Mode 2 pipeline."
-            )
-
             st.dataframe(
-                run[
-                    "sensitivity_summary"
-                ],
+                vietnamese_dataframe(
+                    run[
+                        "sensitivity_summary"
+                    ]
+                ),
                 hide_index=True,
                 width="stretch",
             )
 
             st.dataframe(
-                run[
-                    "sensitivity"
-                ],
+                vietnamese_dataframe(
+                    run[
+                        "sensitivity"
+                    ]
+                ),
                 hide_index=True,
                 width="stretch",
             )
 
     # ========================================================
-    # TAB 6 · SOURCE & MODEL VALIDATION
+    # TECHNICAL DETAILS
     # ========================================================
 
-    with t6:
+    with st.expander(
+        "Chi tiết kỹ thuật & kiểm định mô hình"
+    ):
 
         v1, v2, v3 = (
             st.columns(3)
         )
 
         v1.metric(
-            "Holdout MAE (index points)",
+            "MAE mô hình",
             f'{q["holdout_mae_points"]:.3f}',
         )
 
         v2.metric(
-            "Persistence MAE (index points)",
+            "MAE Persistence",
             f'{q["persistence_mae_points"]:.3f}',
         )
 
         v3.metric(
-            "Valid holdout pairs",
+            "Số cặp holdout hợp lệ",
             q[
                 "holdout_pairs"
             ],
         )
 
         st.caption(
-            "One-step replay uses historical water actions to "
-            "validate predictions. Future holdout targets do not "
-            "enter training or policy inputs."
-        )
-
-        validation = (
-            run[
-                "validation"
-            ]
-            .set_index(
-                "timestamp"
-            )
-        )
-
-        st.line_chart(
-            validation[
-                [
-                    "observed_next_index",
-                    "predicted_next_index",
-                    "persistence_next_index",
-                ]
-            ]
+            "Phần này dành cho kiểm tra kỹ thuật. "
+            "Future holdout target không được dùng "
+            "trong training hoặc policy input."
         )
 
         st.subheader(
-            "Holdout validation table"
+            "Bảng kiểm định holdout"
         )
 
         st.dataframe(
-            run[
-                "validation"
-            ],
+            vietnamese_dataframe(
+                run[
+                    "validation"
+                ]
+            ),
             hide_index=True,
             width="stretch",
         )
 
         st.subheader(
-            "Data-quality and simulation audit"
+            "Thông tin chất lượng dữ liệu"
         )
 
         st.json(
@@ -1680,7 +1753,7 @@ The new ranking is compared with the baseline to identify:
         )
 
         st.subheader(
-            "Soil-response surrogate"
+            "Thông tin mô hình surrogate"
         )
 
         st.json(
